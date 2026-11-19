@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #define MAX_ARGS 100
 
@@ -19,6 +20,8 @@ int main(void)
     int argc;
     int last_status = 0;
     int status;
+
+    signal(SIGINT, SIG_IGN);
 
     while (1)
     {
@@ -96,15 +99,10 @@ int main(void)
         char *input_file = NULL;
         char *output_file = NULL;
 
-        for (int i = 0; i < argc; i++)
+        if (strcmp(argv[argc - 1], "&") == 0)
         {
-            if (strcmp(argv[i], "&") == 0 && i == argc - 1)
-            {
-                background = 1;
-                argv[i] = NULL;
-                argc--;
-                break;
-            }
+            background = 1;
+            argv[--argc] = NULL;
         }
 
         for (int i = 0; i < argc; i++)
@@ -112,7 +110,6 @@ int main(void)
             if (strcmp(argv[i], "<") == 0 && i + 1 < argc)
             {
                 input_file = argv[i + 1];
-                argv[i] = NULL;
 
                 for (int j = i; j + 2 <= argc; j++)
                 {
@@ -125,7 +122,6 @@ int main(void)
             else if (strcmp(argv[i], ">") == 0 && i + 1 < argc)
             {
                 output_file = argv[i + 1];
-                argv[i] = NULL;
 
                 for (int j = i; j + 2 <= argc; j++)
                 {
@@ -153,6 +149,8 @@ int main(void)
         }
         else if (pid == 0)
         {
+            signal(SIGINT, SIG_DFL);
+
             if (input_file != NULL)
             {
                 int fd = open(input_file, O_RDONLY);
