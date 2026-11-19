@@ -16,6 +16,8 @@ int main(void)
     char *argv[MAX_ARGS];
     char *token;
     int argc;
+    int last_status = 0;
+    int status;
 
     while (1)
     {
@@ -55,8 +57,15 @@ int main(void)
             printf("Available commands:\n");
             printf("cd [directory] - Change directory\n");
             printf("help - Display available commands\n");
+            printf("status - Display previous exit status\n");
             printf("exit - Exit the shell\n");
-            printf("Other Linux commands can also be executed.\n");
+            last_status = 0;
+            continue;
+        }
+
+        if (strcmp(argv[0], "status") == 0)
+        {
+            printf("Last exit status: %d\n", last_status);
             continue;
         }
 
@@ -67,10 +76,16 @@ int main(void)
             if (directory == NULL)
             {
                 fprintf(stderr, "cd: HOME directory not found\n");
+                last_status = 1;
             }
             else if (chdir(directory) != 0)
             {
                 perror("cd");
+                last_status = 1;
+            }
+            else
+            {
+                last_status = 0;
             }
 
             continue;
@@ -81,6 +96,7 @@ int main(void)
         if (pid < 0)
         {
             perror("fork failed");
+            last_status = 1;
         }
         else if (pid == 0)
         {
@@ -90,7 +106,19 @@ int main(void)
         }
         else
         {
-            waitpid(pid, NULL, 0);
+            if (waitpid(pid, &status, 0) == -1)
+            {
+                perror("waitpid failed");
+                last_status = 1;
+            }
+            else if (WIFEXITED(status))
+            {
+                last_status = WEXITSTATUS(status);
+            }
+            else if (WIFSIGNALED(status))
+            {
+                last_status = 128 + WTERMSIG(status);
+            }
         }
     }
 
