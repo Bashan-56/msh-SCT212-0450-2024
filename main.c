@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #define MAX_ARGS 100
 
@@ -42,11 +44,21 @@ int main(void)
             continue;
         }
 
-        printf("Arguments received:\n");
+        pid_t pid = fork();
 
-        for (int i = 0; i < argc; i++)
+        if (pid < 0)
         {
-            printf("argv[%d] = %s\n", i, argv[i]);
+            perror("fork failed");
+        }
+        else if (pid == 0)
+        {
+            execvp(argv[0], argv);
+            perror("Command execution failed");
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            waitpid(pid, NULL, 0);
         }
     }
 
