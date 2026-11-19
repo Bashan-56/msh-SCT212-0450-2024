@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define MAX_ARGS 100
 
@@ -92,12 +93,51 @@ int main(void)
         }
 
         int background = 0;
+        char *input_file = NULL;
+        char *output_file = NULL;
 
-        if (strcmp(argv[argc - 1], "&") == 0)
+        for (int i = 0; i < argc; i++)
         {
-            background = 1;
-            argv[--argc] = NULL;
+            if (strcmp(argv[i], "&") == 0 && i == argc - 1)
+            {
+                background = 1;
+                argv[i] = NULL;
+                argc--;
+                break;
+            }
         }
+
+        for (int i = 0; i < argc; i++)
+        {
+            if (strcmp(argv[i], "<") == 0 && i + 1 < argc)
+            {
+                input_file = argv[i + 1];
+                argv[i] = NULL;
+
+                for (int j = i; j + 2 <= argc; j++)
+                {
+                    argv[j] = argv[j + 2];
+                }
+
+                argc -= 2;
+                i--;
+            }
+            else if (strcmp(argv[i], ">") == 0 && i + 1 < argc)
+            {
+                output_file = argv[i + 1];
+                argv[i] = NULL;
+
+                for (int j = i; j + 2 <= argc; j++)
+                {
+                    argv[j] = argv[j + 2];
+                }
+
+                argc -= 2;
+                i--;
+            }
+        }
+
+        argv[argc] = NULL;
 
         if (argc == 0)
         {
@@ -113,6 +153,34 @@ int main(void)
         }
         else if (pid == 0)
         {
+            if (input_file != NULL)
+            {
+                int fd = open(input_file, O_RDONLY);
+
+                if (fd < 0)
+                {
+                    perror("input redirection");
+                    exit(EXIT_FAILURE);
+                }
+
+                dup2(fd, STDIN_FILENO);
+                close(fd);
+            }
+
+            if (output_file != NULL)
+            {
+                int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+                if (fd < 0)
+                {
+                    perror("output redirection");
+                    exit(EXIT_FAILURE);
+                }
+
+                dup2(fd, STDOUT_FILENO);
+                close(fd);
+            }
+
             execvp(argv[0], argv);
             perror("Command execution failed");
             exit(EXIT_FAILURE);
