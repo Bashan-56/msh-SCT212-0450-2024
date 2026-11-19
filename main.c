@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +42,37 @@ int main(void)
 
         if (argc == 0)
         {
+            continue;
+        }
+
+        if (strcmp(argv[0], "exit") == 0)
+        {
+            break;
+        }
+
+        if (strcmp(argv[0], "help") == 0)
+        {
+            printf("Available commands:\n");
+            printf("cd [directory] - Change directory\n");
+            printf("help - Display available commands\n");
+            printf("exit - Exit the shell\n");
+            printf("Other Linux commands can also be executed.\n");
+            continue;
+        }
+
+        if (strcmp(argv[0], "cd") == 0)
+        {
+            const char *directory = (argc > 1) ? argv[1] : getenv("HOME");
+
+            if (directory == NULL)
+            {
+                fprintf(stderr, "cd: HOME directory not found\n");
+            }
+            else if (chdir(directory) != 0)
+            {
+                perror("cd");
+            }
+
             continue;
         }
 
