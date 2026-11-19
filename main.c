@@ -91,6 +91,19 @@ int main(void)
             continue;
         }
 
+        int background = 0;
+
+        if (strcmp(argv[argc - 1], "&") == 0)
+        {
+            background = 1;
+            argv[--argc] = NULL;
+        }
+
+        if (argc == 0)
+        {
+            continue;
+        }
+
         pid_t pid = fork();
 
         if (pid < 0)
@@ -103,6 +116,11 @@ int main(void)
             execvp(argv[0], argv);
             perror("Command execution failed");
             exit(EXIT_FAILURE);
+        }
+        else if (background)
+        {
+            printf("Started background process with PID %d\n", pid);
+            last_status = 0;
         }
         else
         {
